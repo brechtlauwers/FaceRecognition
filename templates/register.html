@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>register</title>
+    </head>
+    <body>
+        <div>
+            <form method="POST">
+                <label>Name: </label> <br />
+                <input name="name" type="text" placeholder="Enter Full name" required>
+                <br /> <br />
+                <label>Email: </label><br />
+                <input name="email" type="email" placeholder="Enter email" required>
+                <br /><br />
+                <label>Password: </label><br />
+                <input name="password" type="password" placeholder="Enter password" pattern=".{5,}" required>
+                <br /><br />
+                <input type="submit" value="create user">
+                <br /><br />
+            </form>
+        </div>
+    </body>
+</html>

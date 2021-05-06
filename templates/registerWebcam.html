@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register Webcam</title>
+
+    <style>
+        #camera {
+        height:auto;
+        width:auto;
+        text-align: left;
+        }
+    </style>
+
+    <!--https://github.com/jhuckaby/webcamjs-->
+    <script type="text/javascript" src="../webcamjs-master/webcam.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.25/webcam.js"></script>
+
+    <script>
+        function init() {
+            Webcam.set({
+                width: 320,
+                height: 240,
+                dest_width: 640,
+		        dest_height: 480,
+                image_format: 'jpeg',
+                jpeg_quality: 100
+            });
+            Webcam.attach('#camera');
+        }
+
+        function takeSnapShot() {
+            Webcam.snap(function (data_uri) {
+                document.getElementById('snapShot').innerHTML =
+                    '<img src="' + data_uri + '" width="70px" height="50px" />';
+                var Pic = document.getElementById("canvas").toDataURL("image/jpg");
+            });
+        }
+    </script>
+</head>
+
+<body onload="init()">
+    <div id="camera"></div>
+    <input type="button" value="Take a picture" id="btPic" onclick="takeSnapShot()" />
+    <p id="snapShot"></p>
+</body>
+</html>

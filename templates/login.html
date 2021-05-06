@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>login</title>
+    </head>
+    <body>
+        <div>
+            <form action="" method="POST">
+                <label>Username: </label> <br />
+                <input name="username" type="email" placeholder="Enter username" required>
+                <br /> <br />
+                <label>Password: </label><br />
+                <input name="password" type="password" placeholder="Enter password" pattern=".{5,}" required>
+                <br /><br />
+                <button type="submit" value="signup">Sign Up</button>
+            </form>
+        </div>
+        <div>
+            <br />
+            <form action="/new">
+                <label>Don't have an account?</label>
+                <input type="submit" value="Register">
+            </form>
+
+            <form action="/video_login">
+                <input type="submit" value="Webcam login">
+            </form>
+        </div>
+    </body>
+</html>
