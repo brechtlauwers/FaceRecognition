@@ -3,8 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <title>Login Webcam</title>
+
+    <style>
+        p{
+            font-size: 200%;
+        }
+
+        #camera {
+        height:auto;
+        width:auto;
+        text-align: left;
+        }
+
+        .alert-error {
+            padding: 8px;
+            background-color: red;
+            color: white;
+        }
+    </style>
+
+    <!-- https://github.com/jhuckaby/webcamjs -->
+    <script type="text/javascript" src="../webcamjs-master/webcam.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.25/webcam.js"></script>
+
+    <script>
+        var image
+        function init() {
+            Webcam.set({
+                width: 320,
+                height: 240,
+                dest_width: 640,
+                dest_height: 480,
+                image_format: 'jpeg',
+                jpeg_quality: 100
+            });
+            Webcam.attach('#camera');
+        }
+
+        function takeSnapShot() {
+            Webcam.snap(function (data_uri) {
+                image = data_uri;
+                });
+
+            let xhr = new XMLHttpRequest();
+            let formdata = new FormData();
+
+            formdata.append('image', dataURLtoBlob(image))
+
+            xhr.open('POST', '/verify', true);
+            xhr.onload = function () {
+                if (this.status === 200)
+                    console.log(this.response);
+                else
+                    console.error(xhr);
+            };
+
+            xhr.send(formdata);
+        }
+
+        function dataURLtoBlob(dataurl) {
+            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], {type:mime});
+        }
+    </script>
 </head>
-<body>
-    <img src="{{ url_for('live_video2') }}" width="100%">
+
+<body onload="init()">
+
+    {% for message in get_flashed_messages() %}
+    <div class="alert-error">Error: {{ message }}</div>
+    {% endfor %}
+
+    <div>
+        <form action="/verify" method="POST">
+            <div id="camera"></div>
+            <p id="info"></p>
+            <label>Username / Email: </label> <br />
+            <input name="email" id="email" type="email" placeholder="Enter username" required>
+            <br /> <br />
+            <button type="submit" value="login">Sign Up</button>
+        </form>
+    </div>
 </body>
 </html>
