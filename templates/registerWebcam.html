@@ -5,18 +5,45 @@
     <title>Register Webcam</title>
 
     <style>
+        p{
+            font-size: 200%;
+        }
+
         #camera {
         height:auto;
         width:auto;
         text-align: left;
         }
+
+        #takepicture {
+            display: block;
+        }
+
+        #preview {
+            display: none;
+        }
+
+        #result > img{
+            width: 400px;
+        }
+
+        .alert-error {
+        padding: 8px;
+        background-color: red;
+        color: white;
+        }
     </style>
 
-    <!--https://github.com/jhuckaby/webcamjs-->
+    <!-- https://github.com/jhuckaby/webcamjs -->
     <script type="text/javascript" src="../webcamjs-master/webcam.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.25/webcam.js"></script>
 
     <script>
+        var images = [];
+        var stop;
+        var counter = 0;
+        var info = '';
+
         function init() {
             Webcam.set({
                 width: 320,
@@ -29,19 +56,113 @@
             Webcam.attach('#camera');
         }
 
+        function takePictures() {
+            document.getElementById("btPic").style.display = "none";
+            document.getElementById("info").innerHTML = 'Ready? smile!';       
+            stop = setInterval(takeSnapShot, 3000);
+        }
+
         function takeSnapShot() {
+            switch (counter)
+            {
+                case 0: info = "Close your eyes"; break;
+                case 1: info = "Put one hand in the air"; break;
+                case 2: info = "Processing..."; break;
+            }
+
+            document.getElementById("info").innerHTML = info;
+
             Webcam.snap(function (data_uri) {
-                document.getElementById('snapShot').innerHTML =
-                    '<img src="' + data_uri + '" width="70px" height="50px" />';
-                var Pic = document.getElementById("canvas").toDataURL("image/jpg");
-            });
+                images[counter] = data_uri;
+                });
+            
+            if(counter>=3) 
+                { 
+                    clearInterval(stop); 
+                    hide();
+                    counter = 0;
+                    info = '';
+
+                    for(var i=0; i<3; i++)
+                    {
+                        document.getElementById('result').innerHTML += '<img src="'+images[i]+'"/>';
+                    }
+                    upload();
+                }
+            counter++;
+        }
+
+        function hide() {
+            var takepicture = document.getElementById('takepicture');
+            var preview = document.getElementById('preview');
+
+            if (takepicture.style.display === "none") {
+                takepicture.style.display = "block";
+                preview.style.display = "none";
+            }
+            else {
+                takepicture.style.display = "none";
+                preview.style.display = "block";
+            }
+        }
+
+        function retake() {
+            images = [];
+            counter = 0;
+            document.getElementById('result').innerHTML = "";
+            document.getElementById('info').innerHTML = "";
+            document.getElementById("btPic").style.display = "block";
+            hide();
+        }
+
+        function upload() {
+            let xhr = new XMLHttpRequest();
+            let formdata = new FormData();
+
+            for(var x=0; x<3; x++) {
+                formdata.append("img"+(x+1), dataURLtoBlob(images[x]));
+            }
+
+            xhr.open('POST', '/upload', true);
+            xhr.onload = function () {
+                if (this.status === 200)
+                    console.log(this.response);
+                else
+                    console.error(xhr);
+            };
+
+            xhr.send(formdata);
+        }
+
+        function dataURLtoBlob(dataurl) {
+            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], {type:mime});
         }
     </script>
 </head>
 
 <body onload="init()">
-    <div id="camera"></div>
-    <input type="button" value="Take a picture" id="btPic" onclick="takeSnapShot()" />
-    <p id="snapShot"></p>
+    {% for message in get_flashed_messages() %}
+    <div class="alert-error">Error: {{ message }}</div>
+    {% endfor %}
+
+    <div id="takepicture">
+        <div id="camera"></div>
+        <input type="button" value="Take a picture" id="btPic" onclick="takePictures()" />
+        <p id="info"></p>
+    </div>
+
+    <div id="preview">
+        <div id="result"></div>
+        <p>Confirm?</p>
+        <form method="POST">
+            <input type="submit" value="Yes, submit">
+        </form>
+        <input type="button" value="No, retake" onclick="retake()">
+    </div>
 </body>
 </html>
