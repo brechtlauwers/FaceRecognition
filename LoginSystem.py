@@ -1,93 +1,13 @@
-from flask import Flask, render_template, request ,redirect, session, url_for, Response
+from flask import Flask, render_template, request ,redirect, session, url_for, Response, flash
 from flask_mysqldb import MySQL
 import MySQLdb
 import bcrypt
 import cv2
 import os
+import glob
+import time
 
-def FaceDataset():
-    webcam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    classifier = cv2.CascadeClassifier('cascades/haarcascade_frontalface_default.xml')
-
-    cropSize = (128, 128)
-    pictureCount = 20
-
-    username = input('\n enter user name and press enter ==>  ')
-    username = username.replace(" ", "-").lower()
-    path = "../DeepLearning/dataset/" + username
-
-    if (os.path.exists(path)):
-        print("\nThis name is already in our database...")
-        exit(-1)
-    else:
-        os.mkdir(path)
-
-    print("\nLook at the camera and wait ...")
-
-    count = 0
-
-    while(count < pictureCount):
-        ret, frame = webcam.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        boxes = classifier.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=6)
-
-        for i in boxes:
-            x, y, width, height = i
-            x2, y2 = x + width, y + height
-            cv2.rectangle(frame, (x, y), (x2, y2), (0, 0, 225), 1)
-            count += 1
-
-            gray = cv2.resize(gray[y:y + height, x:x + width], cropSize)
-            cv2.imwrite(path + '/' + str(count) + ".jpg", gray)
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-        cv2.waitKey(100)
-
-    print("\nReady!")
-    webcam.release()
-    cv2.destroyAllWindows()
-
-
-
-def FaceRecognition():
-    classifier = cv2.CascadeClassifier('cascades/haarcascade_frontalface_default.xml')  # cascade model wordt geladen
-    result = True
-    cropSize = (128, 128)
-
-    webcam = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Webcam wordt geopend en foto wordt getrokken en opgeslagen
-
-    while (result):
-        ret, frame = webcam.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        boxes = classifier.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=6)  # gezicht wordt herkend
-        cv2.putText(frame, "press 'q' to take a picture", (200, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255))
-
-        for i in boxes:
-            print(i)
-            x, y, width, height = i
-            x2, y2 = x + width, y + height
-            cv2.rectangle(frame, (x, y), (x2, y2), (0, 0, 225), 1)  # vierkant rond gezicht tekenen
-
-            cropped = gray[y:y + height, x:x + width]
-            cropped = cv2.resize(cropped, cropSize)  # foto wordt geresized
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-            cv2.imwrite("webcam/" + str(width) + str(height) + "_faces.jpg", cropped)  # foto wordt opgeslagen
-
-        if cv2.waitKey(10) & 0xFF == ord('q'):  # Als er op 'q' wordt gedrukt, dan neem je een foto + wordt opgeslagen
-            cv2.imwrite('fotos/camera.jpg', cropped)
-            result = False
-
-    webcam.release()
-    cv2.destroyAllWindows()
-
-
+classifier = cv2.CascadeClassifier('Cascades/haarcascade_frontalface_default.xml')
 
 app = Flask(__name__)
 app.secret_key = "123435235"
@@ -125,6 +45,18 @@ def new_user():
             username = request.form['name']
             email = request.form['email']
             password = request.form['password']
+            session['email'] = email
+
+            email = email.replace(" ", "-").lower()
+            path = "../DeepLearning/dataset/" + email
+
+            if (os.path.exists(path)):
+                session.pop('_flashes', None)
+                flash("This email is already in the database!")
+                return render_template('register.html')
+            else:
+                os.mkdir(path)
+
             cur = db.connection.cursor(MySQLdb.cursors.DictCursor)
             hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             cur.execute("INSERT INTO login.logininfo(name, password, email)VALUES(%s,%s,%s)",(username, hashed, email))
@@ -142,23 +74,92 @@ def logout():
     session.pop('loginsuccess', None)
     return redirect(url_for('index'))
 
-@app.route('/register_webcam')
+@app.route('/register_webcam', methods=['GET', 'POST'])
 def register_webcam():
+    if request.method == "POST":
+        email = session['email']
+        images_path = os.path.join('.\dataset', email)
+        if len(os.listdir(images_path)) == 6:
+            session.pop('_flashes', None)
+            flash("Your account has been made!")
+            return redirect(url_for('index'))
+        else:
+            session.pop('_flashes', None)
+            flash("Your face has not been recognized, retry!")
+            return render_template("registerWebcam.html")
+
     return render_template("registerWebcam.html")
 
-@app.route('/video_login')
-def video_login():
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    if request.method == "POST":
+        email = session['email']
+        images_path = os.path.join('.\dataset', email)
+        frame = []
+        boxes = []
+
+        f = glob.glob(os.path.join(images_path, "*"))
+        for e in f:
+            os.remove(e)
+
+        img1 = request.files['img1']
+        img2 = request.files['img2']
+        img3 = request.files['img3']
+
+        img1.save('%s/%s' % (images_path, ('%s-1.jpeg' % time.strftime("%Y%m%d-%H%M%S"))))
+        img2.save('%s/%s' % (images_path, ('%s-2.jpeg' % time.strftime("%Y%m%d-%H%M%S"))))
+        img3.save('%s/%s' % (images_path, ('%s-3.jpeg' % time.strftime("%Y%m%d-%H%M%S"))))
+
+        imgarr = os.listdir(images_path)
+
+        for current in range(len(imgarr)):
+            buffer = os.path.join(images_path, imgarr[current])
+            frame.append(cv2.imread(buffer))
+            gray = cv2.cvtColor(frame[current], cv2.COLOR_BGR2GRAY)
+            boxes.append(classifier.detectMultiScale(gray,
+                                                     scaleFactor=1.1,
+                                                     minNeighbors=5,
+                                                     minSize=(60, 60),
+                                                     flags=cv2.CASCADE_SCALE_IMAGE))
+            print(boxes[current])
+            if len(boxes[current]) == 1:
+                for k in boxes[current]:
+                    x, y, width, height = k
+                    x2, y2 = x + width, y + height
+                    cv2.rectangle(frame[current], (x, y), (x2, y2), (0, 0, 225), 1)
+                    crop = cv2.resize(frame[current][y:y + height, x:x + width], (128, 128))
+
+                cv2.imwrite("./dataset/" + email + "/facerecognition" + str(current) + ".jpg", crop)
+            else:
+                print('picture ' + str(current+1) + ' failed')
+            cv2.waitKey(100)
+    return render_template("login.html")
+
+@app.route('/webcam_login', methods=['GET', 'POST'])
+def webcamLogin():
+    if request.method == 'POST':
+        return render_template('profile.html')
+    return render_template('loginWebcam.html')
+
+@app.route('/verify', methods=['GET', 'POST'])
+def webcamVerify():
+    if request.method == 'POST':
+        email = request.form['email']
+        cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM logininfo WHERE email=%s", [email])
+        account = cursor.fetchone()
+
+        if account is not None:
+            if account['email'] == email:
+                session['loginsuccess'] = True
+                return redirect(url_for('profile'))
+        else:
+            session.pop('_flashes', None)
+            flash("Your email has not been found.")
+            return redirect(url_for('webcamLogin'))
+
+
     return render_template("loginWebcam.html")
-
-@app.route('/live_video')
-def live_video():
-    return Response(FaceDataset(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-@app.route('/login_video')
-def live_video2():
-    return Response(FaceRecognition(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
