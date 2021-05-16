@@ -3,8 +3,20 @@
     <head>
         <meta charset="UTF-8">
         <title>login</title>
+
+        <style>
+            .alert-error {
+            padding: 8px;
+            background-color: green;
+            color: white;
+            }
+        </style>
     </head>
     <body>
+        {% for message in get_flashed_messages() %}
+        <div class="alert-error">Succes: {{ message }}</div>
+        {% endfor %}        
+
         <div>
             <form action="" method="POST">
                 <label>Username: </label> <br />
@@ -23,7 +35,7 @@
                 <input type="submit" value="Register">
             </form>
 
-            <form action="/video_login">
+            <form action="/webcam_login">
                 <input type="submit" value="Webcam login">
             </form>
         </div>
