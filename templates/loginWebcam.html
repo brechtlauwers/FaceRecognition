@@ -9,10 +9,19 @@
             font-size: 200%;
         }
 
+        img {
+            width: 320px;
+            height: 240px;
+        }
+
         #camera {
         height:auto;
         width:auto;
         text-align: left;
+        }
+
+        #btRetake {
+            display: none;
         }
 
         .alert-error {
@@ -28,6 +37,7 @@
 
     <script>
         var image
+
         function init() {
             Webcam.set({
                 width: 320,
@@ -43,12 +53,16 @@
         function takeSnapShot() {
             Webcam.snap(function (data_uri) {
                 image = data_uri;
+                document.getElementById('my_result').innerHTML = '<img src="'+data_uri+'"/>';
                 });
 
             let xhr = new XMLHttpRequest();
             let formdata = new FormData();
 
             formdata.append('image', dataURLtoBlob(image))
+            formdata.append('email', document.getElementById('email').value)
+
+            console.log('test')
 
             xhr.open('POST', '/verify', true);
             xhr.onload = function () {
@@ -59,6 +73,11 @@
             };
 
             xhr.send(formdata);
+            document.getElementById('submit').style.display = "block";
+            document.getElementById('camera').style.display = "none";
+            document.getElementById('my_result').style.display = "block";
+
+            return true;
         }
 
         function dataURLtoBlob(dataurl) {
@@ -69,6 +88,7 @@
             }
             return new Blob([u8arr], {type:mime});
         }
+
     </script>
 </head>
 
@@ -79,13 +99,15 @@
     {% endfor %}
 
     <div>
-        <form action="/verify" method="POST">
-            <div id="camera"></div>
-            <p id="info"></p>
+        <div id="camera"></div>
+        <div id="my_result"></div>
+        <p id="info"></p>
+
+        <form onsubmit="return takeSnapShot()" method="POST">
             <label>Username / Email: </label> <br />
             <input name="email" id="email" type="email" placeholder="Enter username" required>
             <br /> <br />
-            <button type="submit" value="login">Sign Up</button>
+            <input type="submit" value="login" id="submit">
         </form>
     </div>
 </body>
