@@ -7,14 +7,14 @@
         <style>
             .alert-error {
             padding: 8px;
-            background-color: green;
+            background-color: gray;
             color: white;
             }
         </style>
     </head>
     <body>
         {% for message in get_flashed_messages() %}
-        <div class="alert-error">Succes: {{ message }}</div>
+        <div class="alert-error">attention: {{ message }}</div>
         {% endfor %}        
 
         <div>

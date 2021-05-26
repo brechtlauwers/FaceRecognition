@@ -9,8 +9,9 @@ import time
 import dlib
 import face_recognition
 
-# cascade model wordt geladen
+# cascade model van gezicht en ogen wordt geladen
 classifier = cv2.CascadeClassifier('Cascades/haarcascade_frontalface_default.xml')
+EyeCascade = cv2.CascadeClassifier('cascades/haarcascade_eye_tree_eyeglasses.xml')
 
 # verbinding maken en inloggen met MYSQL database via Flask
 app = Flask(__name__)
@@ -114,21 +115,41 @@ def register_webcam():
         email = session['email']
         images_path = os.path.join('.\dataset', email)
 
-        # nakijken ofdat er 6 foto's in de directory zitten
-        # als dit niet het geval is wil het zeggen dat er een gezicht niet herkend werd
-        if len(os.listdir(images_path)) == 6:
-            session.pop('_flashes', None)
-            flash("Your account has been made!")
-            os.remove(images_path + '/facerecognition0.jpg')
-            os.remove(images_path + '/facerecognition1.jpg')
-            os.remove(images_path + '/facerecognition2.jpg')
-            return redirect(url_for('index'))
+        #we checken of op de laatste foto die getrokken is bij het regristreren de ogen gesloten zijn
+        image_eye = cv2.imread(images_path + "/eyes_picture.jpg")
+        eyes = EyeCascade.detectMultiScale(
+            image_eye,
+            scaleFactor=1.1,
+            minNeighbors=3,
+            minSize=(30, 30),
+        )
+
+        #indien de ogen gesloten zijn gaat het programma verder met regristratie
+        if len(eyes) == 0:
+            # nakijken ofdat er 11 foto's in de directory zitten
+            # als dit niet het geval is wil het zeggen dat er een gezicht niet herkend werd
+            if len(os.listdir(images_path)) == 11:
+                session.pop('_flashes', None)
+                flash("Your account has been made!")
+                os.remove(images_path + '/facerecognition0.jpg')
+                os.remove(images_path + '/facerecognition1.jpg')
+                os.remove(images_path + '/facerecognition2.jpg')
+                os.remove(images_path + '/facerecognition3.jpg')
+                os.remove(images_path + '/facerecognition4.jpg')
+                return redirect(url_for('index'))
+            else:
+                session.pop('_flashes', None)
+                flash("Your face has not been recognized, retry!")
+                # opnieuw proberen, page refreshen met error message
+                return render_template("registerWebcam.html")
+
+        #indien de ogen niet gesloten zijn neem je terug 6 foto's
         else:
+            print("eyes not closed")
             session.pop('_flashes', None)
-            flash("Your face has not been recognized, retry!")
+            flash("Your eyes were not closed (enough) on the last picture, please try again!")
             # opnieuw proberen, page refreshen met error message
             return render_template("registerWebcam.html")
-
     return render_template("registerWebcam.html")
 
 
@@ -151,11 +172,15 @@ def upload():
         img1 = request.files['img1']
         img2 = request.files['img2']
         img3 = request.files['img3']
-
+        img4 = request.files['img4']
+        img5 = request.files['img5']
+        
         # deze foto's worden opgeslagen
         img1.save('%s/%s' % (images_path, ('%s-1.jpg' % time.strftime("%Y%m%d-%H%M%S"))))
         img2.save('%s/%s' % (images_path, ('%s-2.jpg' % time.strftime("%Y%m%d-%H%M%S"))))
         img3.save('%s/%s' % (images_path, ('%s-3.jpg' % time.strftime("%Y%m%d-%H%M%S"))))
+        img4.save('%s/%s' % (images_path, ('%s-4.jpg' % time.strftime("%Y%m%d-%H%M%S"))))
+        img5.save('%s/%s' % (images_path, ('%s-5.jpg' % time.strftime("%Y%m%d-%H%M%S"))))
         imgarr = os.listdir(images_path)
 
         # loop voor deze foto's
@@ -198,6 +223,12 @@ def upload():
 
             # delay
             cv2.waitKey(100)
+
+        #deze 6de foto wordt pas na de loop opgeslagen omdat dit de foto is waarbij de ogen toe zijn
+        #de foto zal dus niet gebruikt worden om te vergelijken maar als extra safety feature. 
+        img6 = request.files['img6']
+        img6.save('%s/%s' % (images_path, ("eyes_picture.jpg")))
+
     return render_template("login.html")
 
 
@@ -205,7 +236,7 @@ def upload():
 @app.route('/webcam_login', methods=['GET', 'POST'])
 def webcamLogin():
     if request.method == 'POST':
-        access = 1
+        access = 0
         # delay van 2 seconden om er zeker van te zijn dat foto's correct werden weggeschreven in directory
         time.sleep(2)
         # email uit database halen en opslagen
@@ -254,16 +285,18 @@ def webcamLogin():
                                     os.remove(images_path+'/'+file)
 
                     # je krijgt alleen toegang tot je account als de meerderheid van je foto's overeenkomen
-                    if access > 2:
-                        # foto's verwijderen die niet meer gebruikt moeten worden
+                    if access > 4:
+                         # foto's verwijderen die niet meer gebruikt moeten worden
                         os.remove(images_path + '/login_crop.jpg')
                         os.remove(images_path + '/login.jpg')
-
                         # doorverwijzen naar profiel want je bent ingelogd!
                         return render_template('profile.html')
                     else:
+                        # terugsturen naar de loginpagina want je bent niet ingelogd
                         return render_template('login.html')
                 else:
+                    # foto's verwijderen die niet meer gebruikt moeten worden
+                    os.remove(images_path + '/login.jpg')
                     # error voor als gezicht niet herkend werd
                     session.pop('_flashes', None)
                     flash("Your face has not been recognized, retry!")

@@ -51,39 +51,42 @@
                 dest_width: 640,
 		        dest_height: 480,
                 image_format: 'jpeg',
-                jpeg_quality: 100
+                jpeg_quality: 200
             });
             Webcam.attach('#camera');
         }
 
         function takePictures() {
             document.getElementById("btPic").style.display = "none";
-            document.getElementById("info").innerHTML = 'Ready? smile!';       
+            document.getElementById("info").innerHTML = 'Ready? A few pictures will be taken now';    
             stop = setInterval(takeSnapShot, 3000);
         }
 
         function takeSnapShot() {
             switch (counter)
             {
-                case 0: info = "Close your eyes"; break;
-                case 1: info = "Put one hand in the air"; break;
-                case 2: info = "Processing..."; break;
+                case 0: info = "picture 1"; break;
+                case 1: info = "picture 2"; break;
+                case 2: info = "picture 3"; break;
+                case 3: info = "picture 4"; break;
+                case 4: info = "picture 5"; break;
+                case 5: info = "As an extra security measure another picture will be taken, please  make sure your eyes are closed in the next picture"; break;
             }
-
+            
             document.getElementById("info").innerHTML = info;
 
             Webcam.snap(function (data_uri) {
                 images[counter] = data_uri;
                 });
             
-            if(counter>=3) 
+            if(counter>=6) 
                 { 
                     clearInterval(stop); 
                     hide();
                     counter = 0;
                     info = '';
 
-                    for(var i=0; i<3; i++)
+                    for(var i=0; i<6; i++)
                     {
                         document.getElementById('result').innerHTML += '<img src="'+images[i]+'"/>';
                     }
@@ -119,7 +122,7 @@
             let xhr = new XMLHttpRequest();
             let formdata = new FormData();
 
-            for(var x=0; x<3; x++) {
+            for(var x=0; x<6; x++) {
                 formdata.append("img"+(x+1), dataURLtoBlob(images[x]));
             }
 
