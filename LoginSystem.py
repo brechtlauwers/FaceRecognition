@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request ,redirect, session, url_for, Response, flash
+from flask import Flask, render_template, request, redirect, session, url_for, Response, flash
 from flask_mysqldb import MySQL
 import MySQLdb
 import bcrypt
@@ -11,7 +11,7 @@ import face_recognition
 
 # cascade model van gezicht en ogen wordt geladen
 classifier = cv2.CascadeClassifier('Cascades/haarcascade_frontalface_default.xml')
-EyeCascade = cv2.CascadeClassifier('cascades/haarcascade_eye_tree_eyeglasses.xml')
+EyeCascade = cv2.CascadeClassifier('Cascades/haarcascade_eye_tree_eyeglasses.xml')
 
 # verbinding maken en inloggen met MYSQL database via Flask
 app = Flask(__name__)
@@ -23,7 +23,6 @@ app.config["MYSQL_PASSWORD"] = "facerecognition01"
 app.config["MYSQL_DB"] = "login"
 
 db = MySQL(app)
-
 
 
 # --HOMEPAGE--
@@ -42,10 +41,11 @@ def index():
 
             # nakijken ofdat account met dit email adres bestaat
             if account is not None:
-                    if account['email'] == username and bcrypt.checkpw(password.encode('utf-8'), account['password'].encode('utf-8')):
-                        # gehashte wachtwoord wordt vergeleken en toegang tot account als dit overeenkomstig is
-                        session['loginsuccess'] = True
-                        return redirect(url_for('profile'))
+                if account['email'] == username and bcrypt.checkpw(password.encode('utf-8'),
+                                                                   account['password'].encode('utf-8')):
+                    # gehashte wachtwoord wordt vergeleken en toegang tot account als dit overeenkomstig is
+                    session['loginsuccess'] = True
+                    return redirect(url_for('profile'))
             else:
                 # refresh als account niet bestaat
                 return redirect(url_for('index'))
@@ -83,7 +83,7 @@ def new_user():
             # wachtwoord hashen voor veiligheid
             hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             # gebruiker toevoegen aan database
-            cur.execute("INSERT INTO login.logininfo(name, password, email)VALUES(%s,%s,%s)",(username, hashed, email))
+            cur.execute("INSERT INTO login.logininfo(name, password, email)VALUES(%s,%s,%s)", (username, hashed, email))
             db.connection.commit()
             # doorverwijzen naar register webcam
             return redirect(url_for('register_webcam'))
@@ -115,16 +115,16 @@ def register_webcam():
         email = session['email']
         images_path = os.path.join('.\dataset', email)
 
-        #we checken of op de laatste foto die getrokken is bij het regristreren de ogen gesloten zijn
+        # we checken of op de laatste foto die getrokken is bij het regristreren de ogen gesloten zijn
         image_eye = cv2.imread(images_path + "/eyes_picture.jpg")
         eyes = EyeCascade.detectMultiScale(
             image_eye,
-            scaleFactor=1.1,
-            minNeighbors=3,
-            minSize=(30, 30),
-        )
+            scaleFactor=1.2,
+            minNeighbors=6,
+            minSize=(60, 60),
+            flags=cv2.CASCADE_SCALE_IMAGE)
 
-        #indien de ogen gesloten zijn gaat het programma verder met regristratie
+        # indien de ogen gesloten zijn gaat het programma verder met regristratie
         if len(eyes) == 0:
             # nakijken ofdat er 11 foto's in de directory zitten
             # als dit niet het geval is wil het zeggen dat er een gezicht niet herkend werd
@@ -143,7 +143,7 @@ def register_webcam():
                 # opnieuw proberen, page refreshen met error message
                 return render_template("registerWebcam.html")
 
-        #indien de ogen niet gesloten zijn neem je terug 6 foto's
+        # indien de ogen niet gesloten zijn neem je terug 6 foto's
         else:
             print("eyes not closed")
             session.pop('_flashes', None)
@@ -174,7 +174,7 @@ def upload():
         img3 = request.files['img3']
         img4 = request.files['img4']
         img5 = request.files['img5']
-        
+
         # deze foto's worden opgeslagen
         img1.save('%s/%s' % (images_path, ('%s-1.jpg' % time.strftime("%Y%m%d-%H%M%S"))))
         img2.save('%s/%s' % (images_path, ('%s-2.jpg' % time.strftime("%Y%m%d-%H%M%S"))))
@@ -203,8 +203,6 @@ def upload():
                 for k in boxes[current]:
                     x, y, width, height = k
                     x2, y2 = x + width, y + height
-                    # vierkant rond gezicht tekenen
-                    cv2.rectangle(gray, (x, y), (x2, y2), (0, 0, 225), 1)
                     # foto resizen naar 128x128
                     crop = cv2.resize(gray[y:y + height, x:x + width], (128, 128))
 
@@ -219,13 +217,13 @@ def upload():
                 # foto wordt opgeslagen als er een gezicht herkend werd
                 cv2.imwrite("./dataset/" + email + "/facerecognition" + str(current) + ".jpg", crop)
             else:
-                print('picture ' + str(current+1) + ' failed')
+                print('picture ' + str(current + 1) + ' failed')
 
             # delay
             cv2.waitKey(100)
 
-        #deze 6de foto wordt pas na de loop opgeslagen omdat dit de foto is waarbij de ogen toe zijn
-        #de foto zal dus niet gebruikt worden om te vergelijken maar als extra safety feature. 
+        # deze 6de foto wordt pas na de loop opgeslagen omdat dit de foto is waarbij de ogen toe zijn
+        # de foto zal dus niet gebruikt worden om te vergelijken maar als extra safety feature.
         img6 = request.files['img6']
         img6.save('%s/%s' % (images_path, ("eyes_picture.jpg")))
 
@@ -282,11 +280,11 @@ def webcamLogin():
                                         access += 1
                                 except IndexError:
                                     # foto verwijderen uit database
-                                    os.remove(images_path+'/'+file)
+                                    os.remove(images_path + '/' + file)
 
                     # je krijgt alleen toegang tot je account als de meerderheid van je foto's overeenkomen
                     if access > 4:
-                         # foto's verwijderen die niet meer gebruikt moeten worden
+                        # foto's verwijderen die niet meer gebruikt moeten worden
                         os.remove(images_path + '/login_crop.jpg')
                         os.remove(images_path + '/login.jpg')
                         # doorverwijzen naar profiel want je bent ingelogd!
@@ -335,7 +333,7 @@ def webcamVerify():
                     img_taken.save(images_path + '/login.jpg')
 
                     # foto wordt ingeladen met OpenCV
-                    frame = cv2.imread(images_path+'/login.jpg')
+                    frame = cv2.imread(images_path + '/login.jpg')
                     # foto wordt zwart wit gemaakt
                     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     # gezicht wordt herkend
@@ -356,9 +354,9 @@ def webcamVerify():
                             # foto resizen naar 128x128
                             crop = cv2.resize(frame[y:y + height, x:x + width], (128, 128))
 
-                            gray = cv2.resize(gray[y:y + height, x:x + width], (128,128))
+                            gray = cv2.resize(gray[y:y + height, x:x + width], (128, 128))
                             # foto opslagen
-                            cv2.imwrite(images_path+'/login_crop.jpg', gray)
+                            cv2.imwrite(images_path + '/login_crop.jpg', gray)
                             # delay
                             cv2.waitKey(100)
                     else:
@@ -373,6 +371,7 @@ def webcamVerify():
             flash("Your email has not been found.")
 
     return render_template("profile.html")
+
 
 if __name__ == '__main__':
     app.run(debug=True)
