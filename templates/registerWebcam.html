@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Register Webcam</title>
 
+
+	// opmaak van de pagina
     <style>
         p{
             font-size: 200%;
@@ -47,6 +49,7 @@
         var counter = 0;
         var info = '';
 
+	// webcam wordt weergeven als pagina volledig ingeladen is
         function init() {
             Webcam.set({
                 width: 320,
@@ -59,12 +62,15 @@
             Webcam.attach('#camera');
         }
 
+	// functie dat om de 3 seconden een foto neemt via de webcam
+	// er worden 6 foto's in totaal genomen
         function takePictures() {
             document.getElementById("btPic").style.display = "none";
             document.getElementById("info").innerHTML = 'picture 1';    
             stop = setInterval(takeSnapShot, 3000);
         }
-
+	
+	// images worden omgezet in data url en worden in een array opgeslagen
         function takeSnapShot() {
             switch (counter)
             {
@@ -89,6 +95,7 @@
                     counter = 0;
                     info = '';
 
+		// foto's worden weergeven op de webpagina
                     for(var i=0; i<6; i++)
                     {
                         document.getElementById('result').innerHTML += '<img src="'+images[i]+'"/>';
@@ -97,7 +104,8 @@
                 }
             counter++;
         }
-
+	
+	// functie dat verschillende elementen op de pagina toggled (show / hide)
         function hide() {
             var takepicture = document.getElementById('takepicture');
             var preview = document.getElementById('preview');
@@ -112,6 +120,7 @@
             }
         }
 
+	// wordt gebruikt als de foto's opnieuw genomen moeten worden
         function retake() {
             images = [];
             counter = 0;
@@ -121,6 +130,7 @@
             hide();
         }
 
+	// foto's worden doorgestuurd via xmlhttp request naar Python
         function upload() {
             let xhr = new XMLHttpRequest();
             let formdata = new FormData();
@@ -140,6 +150,7 @@
             xhr.send(formdata);
         }
 
+	// foto's worden omgezet in data type Blob
         function dataURLtoBlob(dataurl) {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
