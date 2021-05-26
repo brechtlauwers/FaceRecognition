@@ -13,14 +13,17 @@
         height:auto;
         width:auto;
         text-align: left;
+        margin: 20px auto;
         }
 
         #takepicture {
             display: block;
+            margin: 20px auto;
         }
 
         #preview {
             display: none;
+            margin: 20px auto;
         }
 
         #result > img{
@@ -58,19 +61,19 @@
 
         function takePictures() {
             document.getElementById("btPic").style.display = "none";
-            document.getElementById("info").innerHTML = 'Ready? A few pictures will be taken now';    
+            document.getElementById("info").innerHTML = 'picture 1';    
             stop = setInterval(takeSnapShot, 3000);
         }
 
         function takeSnapShot() {
             switch (counter)
             {
-                case 0: info = "picture 1"; break;
-                case 1: info = "picture 2"; break;
-                case 2: info = "picture 3"; break;
-                case 3: info = "picture 4"; break;
-                case 4: info = "picture 5"; break;
-                case 5: info = "As an extra security measure another picture will be taken, please  make sure your eyes are closed in the next picture"; break;
+                case 0: info = "picture 2"; break;
+                case 1: info = "picture 3"; break;
+                case 2: info = "picture 4"; break;
+                case 3: info = "picture 5"; break;
+                case 4: info = "Close your eyes!"; break;
+                case 5: info = "loading..."; break;
             }
             
             document.getElementById("info").innerHTML = info;
@@ -156,7 +159,7 @@
     <div id="takepicture">
         <div id="camera"></div>
         <input type="button" value="Take a picture" id="btPic" onclick="takePictures()" />
-        <p id="info"></p>
+        <p id="info">5 pictures will be taken<br>move your head slightly for each one<br>close your eyes for the last one</p>
     </div>
 
     <div id="preview">
