@@ -37,7 +37,8 @@
 
     <script>
         var image
-
+        
+        // webcam weergeven na de pagina ingeladen is
         function init() {
             Webcam.set({
                 width: 320,
@@ -50,20 +51,22 @@
             Webcam.attach('#camera');
         }
 
+        // functie dat een foto via webcam opslaagt en doorstuurt naar Python als type Blob
         function takeSnapShot() {
             Webcam.snap(function (data_uri) {
                 image = data_uri;
                 document.getElementById('my_result').innerHTML = '<img src="'+data_uri+'"/>';
                 });
 
+            // xmlhttp request openen voor de formdata
             let xhr = new XMLHttpRequest();
             let formdata = new FormData();
 
+            // foto en email toevoegen aan formdata
             formdata.append('image', dataURLtoBlob(image))
             formdata.append('email', document.getElementById('email').value)
 
-            console.log('test')
-
+            // image en email naar Python versturen via POST request
             xhr.open('POST', '/verify', true);
             xhr.onload = function () {
                 if (this.status === 200)
@@ -72,6 +75,7 @@
                     console.error(xhr);
             };
 
+            
             xhr.send(formdata);
             document.getElementById('submit').style.display = "block";
             document.getElementById('camera').style.display = "none";
@@ -80,6 +84,7 @@
             return true;
         }
 
+        // functie dat dataurl van image omzet naar Blob data type
         function dataURLtoBlob(dataurl) {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -93,7 +98,7 @@
 </head>
 
 <body onload="init()">
-
+    // error message voor flask
     {% for message in get_flashed_messages() %}
     <div class="alert-error">Error: {{ message }}</div>
     {% endfor %}
