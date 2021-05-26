@@ -115,39 +115,62 @@ def register_webcam():
         email = session['email']
         images_path = os.path.join('.\dataset', email)
 
-        # we checken of op de laatste foto die getrokken is bij het regristreren de ogen gesloten zijn
+        #de 6de foto die we daarstraks hebben opgeslagen waarop de ogen toe zijn wordt opgehaald
         image_eye = cv2.imread(images_path + "/eyes_picture.jpg")
-        eyes = EyeCascade.detectMultiScale(
-            image_eye,
-            scaleFactor=1.2,
-            minNeighbors=6,
-            minSize=(60, 60),
-            flags=cv2.CASCADE_SCALE_IMAGE)
+        #we kijken allereerst of er wel een hoofd te vinden is op deze foto
+        #als we dit niet eerst checken zou een lege 6de foto ook een positief resultaat geven aangezien hier ook geen ogen op te vinden zijn
+        gray = cv2.cvtColor(image_eye, cv2.COLOR_BGR2GRAY)
+        cropSize = (128, 128)
+        count = 0
+        boxes = classifier.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=4)
+        for i in boxes:
+            print(i)
+            x, y, width, height = i
+            x2, y2 = x + width, y + height
+            cv2.rectangle(image_eye, (x, y), (x2, y2), (0, 0, 225), 1)
+            count += 1
+            gray = cv2.resize(gray[y:y + height, x:x + width], cropSize)
+            cv2.waitKey(1)
 
-        # indien de ogen gesloten zijn gaat het programma verder met regristratie
-        if len(eyes) == 0:
-            # nakijken ofdat er 11 foto's in de directory zitten
-            # als dit niet het geval is wil het zeggen dat er een gezicht niet herkend werd
-            if len(os.listdir(images_path)) == 11:
-                session.pop('_flashes', None)
-                flash("Your account has been made!")
-                os.remove(images_path + '/facerecognition0.jpg')
-                os.remove(images_path + '/facerecognition1.jpg')
-                os.remove(images_path + '/facerecognition2.jpg')
-                os.remove(images_path + '/facerecognition3.jpg')
-                os.remove(images_path + '/facerecognition4.jpg')
-                return redirect(url_for('index'))
+        #als er een gezicht gedetecteerd is gaat het programma verder naar het controleren van de ogen
+        if len(boxes) == True:
+            #we checken of de ogen gesloten zijn
+            eyes = EyeCascade.detectMultiScale(
+                image_eye,
+                scaleFactor=1.1,
+                minNeighbors=3,
+                minSize=(30, 30),
+            )
+
+            #indien de ogen gesloten zijn gaat het programma verder met regristratie
+            if len(eyes) == 0:
+                # nakijken ofdat er 11 foto's in de directory zitten
+                # als dit niet het geval is wil het zeggen dat er een gezicht niet herkend werd
+                if len(os.listdir(images_path)) == 11:
+                    session.pop('_flashes', None)
+                    flash("Your account has been made!")
+                    os.remove(images_path + '/facerecognition0.jpg')
+                    os.remove(images_path + '/facerecognition1.jpg')
+                    os.remove(images_path + '/facerecognition2.jpg')
+                    os.remove(images_path + '/facerecognition3.jpg')
+                    os.remove(images_path + '/facerecognition4.jpg')
+                    return redirect(url_for('index'))
+                else:
+                    session.pop('_flashes', None)
+                    flash("Your face has not been recognized, retry!")
+                    # opnieuw proberen, page refreshen met error message
+                    return render_template("registerWebcam.html")
+
+            #indien de ogen niet gesloten zijn neem je terug 6 foto's
             else:
+                print("eyes not closed")
                 session.pop('_flashes', None)
-                flash("Your face has not been recognized, retry!")
+                flash("Your eyes were not closed (enough) on the last picture, please try again!")
                 # opnieuw proberen, page refreshen met error message
                 return render_template("registerWebcam.html")
-
-        # indien de ogen niet gesloten zijn neem je terug 6 foto's
         else:
-            print("eyes not closed")
             session.pop('_flashes', None)
-            flash("Your eyes were not closed (enough) on the last picture, please try again!")
+            flash("Your face has not been detected on the last picture, retry!")
             # opnieuw proberen, page refreshen met error message
             return render_template("registerWebcam.html")
     return render_template("registerWebcam.html")
