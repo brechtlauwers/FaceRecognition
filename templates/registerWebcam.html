@@ -5,7 +5,7 @@
     <title>Register Webcam</title>
 
 
-	// opmaak van de pagina
+	<!-- opmaak van de pagina -->
     <style>
         p{
             font-size: 200%;
@@ -66,10 +66,10 @@
 	// er worden 6 foto's in totaal genomen
         function takePictures() {
             document.getElementById("btPic").style.display = "none";
-            document.getElementById("info").innerHTML = 'picture 1';    
+            document.getElementById("info").innerHTML = 'picture 1';
             stop = setInterval(takeSnapShot, 3000);
         }
-	
+
 	// images worden omgezet in data url en worden in een array opgeslagen
         function takeSnapShot() {
             switch (counter)
@@ -81,16 +81,16 @@
                 case 4: info = "Close your eyes!"; break;
                 case 5: info = "loading..."; break;
             }
-            
+
             document.getElementById("info").innerHTML = info;
 
             Webcam.snap(function (data_uri) {
                 images[counter] = data_uri;
                 });
-            
-            if(counter>=6) 
-                { 
-                    clearInterval(stop); 
+
+            if(counter>=6)
+                {
+                    clearInterval(stop);
                     hide();
                     counter = 0;
                     info = '';
@@ -104,7 +104,7 @@
                 }
             counter++;
         }
-	
+
 	// functie dat verschillende elementen op de pagina toggled (show / hide)
         function hide() {
             var takepicture = document.getElementById('takepicture');
@@ -177,6 +177,12 @@
         <div id="result"></div>
         <p>Confirm?</p>
         <form method="POST">
+            <input type="submit" value="Yes, submit">
+        </form>
+        <input type="button" value="No, retake" onclick="retake()">
+    </div>
+</body>
+</html> <form method="POST">
             <input type="submit" value="Yes, submit">
         </form>
         <input type="button" value="No, retake" onclick="retake()">
