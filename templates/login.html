@@ -3,8 +3,8 @@
     <head>
         <meta charset="UTF-8">
         <title>login</title>
-        
-        // style voor alert box
+
+        <!-- style voor alert box -->
         <style>
             .alert-error {
             padding: 8px;
@@ -14,10 +14,10 @@
         </style>
     </head>
     <body>
-        // flask error message response
+        <!-- flask error message response -->
         {% for message in get_flashed_messages() %}
         <div class="alert-error">attention: {{ message }}</div>
-        {% endfor %}        
+        {% endfor %}
 
         <div>
             <form action="" method="POST">
@@ -32,14 +32,14 @@
         </div>
         <div>
             <br />
-            
-            // redirect to register account
+
+            <!-- redirect to register account -->
             <form action="/new">
                 <label>Don't have an account?</label>
                 <input type="submit" value="Register">
             </form>
-            
-            // redirect to webcam login
+
+            <!-- redirect to webcam login -->
             <form action="/webcam_login">
                 <input type="submit" value="Webcam login">
             </form>
